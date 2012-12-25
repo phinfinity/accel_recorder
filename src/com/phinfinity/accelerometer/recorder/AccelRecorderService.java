@@ -1,12 +1,16 @@
 package com.phinfinity.accelerometer.recorder;
 
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationCompat.Builder;
 import android.util.Log;
 
 public class AccelRecorderService extends IntentService {
@@ -89,6 +93,19 @@ public class AccelRecorderService extends IntentService {
 		} else {
 			Log.e("accel_service", "Requested second recording while recording");
 		}
+		Intent notificationIntent = new Intent(this, MainActivity.class);
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+		NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
+		mBuilder
+		.setSmallIcon(R.drawable.ic_launcher)
+		.setContentTitle("Recording Accelerometer Data")
+		.setContentText("Accelerometer Data is currently being recorded")
+		.setTicker("Starting Accelerometer Recording...")
+		.setContentIntent(pendingIntent);
+		
+		startForeground(1, mBuilder.build());
+		
+		// Don't let the function end or IntentService might destroy you are add other recordings
 		try {
 			synchronized (this) {
 				this.wait();
@@ -108,6 +125,7 @@ public class AccelRecorderService extends IntentService {
 			synchronized (this) {
 				this.notify();	
 			}
+			stopForeground(true);
 		}
 	}
 
