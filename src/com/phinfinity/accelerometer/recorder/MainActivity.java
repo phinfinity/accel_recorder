@@ -1,14 +1,22 @@
 package com.phinfinity.accelerometer.recorder;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
@@ -20,7 +28,8 @@ import com.phinfinity.accelerometer.recorder.AccelRecorderService.LocalBinder;
 public class MainActivity extends Activity {
 	View screen1, screen2;
 	EditText mFileName;
-	TextView mNoDatapoints;
+	TextView mCounterDatapoints, mCounterDuration, mCounterFileSize,
+			mCounterRate, mCounterStartTime;
 	Spinner mFreq;
 	boolean mBound = false;
 	AccelRecorderService mService;
@@ -28,8 +37,8 @@ public class MainActivity extends Activity {
 
 	Runnable status_updater = new Runnable() {
 		public void run() {
-			if(mService == null)
-				Log.d("accel_activity","No service launched yet...");
+			if (mService == null)
+				Log.d("accel_activity", "No service launched yet...");
 			if (mService != null && mService.is_running()) {
 				is_running();
 			} else {
@@ -47,7 +56,11 @@ public class MainActivity extends Activity {
 		screen2 = findViewById(R.id.screen2);
 		mFileName = (EditText) findViewById(R.id.rec_name);
 		mFreq = (Spinner) findViewById(R.id.spinner_rec_freq);
-		mNoDatapoints = (TextView) findViewById(R.id.no_datapoints);
+		mCounterDatapoints = (TextView) findViewById(R.id.counter_datapoints);
+		mCounterDuration = (TextView) findViewById(R.id.counter_duration);
+		mCounterFileSize = (TextView) findViewById(R.id.counter_filesize);
+		mCounterRate = (TextView) findViewById(R.id.counter_rate);
+		mCounterStartTime = (TextView) findViewById(R.id.counter_start_time);
 		mHandler = new Handler();
 	}
 
@@ -102,6 +115,35 @@ public class MainActivity extends Activity {
 			freq = SensorManager.SENSOR_DELAY_NORMAL;
 		else
 			freq = -1;
+
+		File output_folder = new File(
+				Environment.getExternalStorageDirectory(), "accel_recordings");
+		if (!output_folder.mkdirs()) {
+			Log.d("accel_activity",
+					"Unable to make folder : " + output_folder.toString());
+		}
+		File output_file = new File(output_folder, file_name);
+		Log.d("accel_activity",
+				"Attempting to use file : " + output_file.toString());
+		try {
+			output_file.createNewFile();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		if (!output_file.isFile() || !output_file.canWrite()) {
+			AlertDialog dialog = new AlertDialog.Builder(this).create();
+			dialog.setTitle("Invalid File Name");
+			dialog.setMessage("Error! Unable to create a file with name :\""
+					+ file_name + "\"");
+			DialogInterface.OnClickListener dummy_listener = null;
+			dialog.setButton(DialogInterface.BUTTON_NEUTRAL, "OK",
+					dummy_listener);
+			dialog.show();
+			return;
+		}
+
+		mFileName.setText("");
 		Log.d("accel_activity", "Selected File name : " + file_name);
 		Log.d("accel_activity", "Selected Item Id : " + freq);
 		Intent intent = new Intent(this, AccelRecorderService.class);
@@ -111,15 +153,41 @@ public class MainActivity extends Activity {
 		is_running();
 	}
 
+	private static String humanReadableByteCount(long bytes, boolean si) {
+		int unit = si ? 1000 : 1024;
+		if (bytes < unit)
+			return bytes + " B";
+		int exp = (int) (Math.log(bytes) / Math.log(unit));
+		String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1)
+				+ (si ? "" : "i");
+		return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
+	}
+
 	public void is_running() {
-		Log.d("accel_activity","Updating UI running status");
+		Log.d("accel_activity", "Updating UI running status");
 		screen2.setVisibility(View.VISIBLE);
 		screen1.setVisibility(View.GONE);
-		mNoDatapoints.setText(Long.toString(mService.get_no_points()));
+		long no_points = mService.get_no_points();
+		long start_time = mService.get_start_time();
+		long current_time = System.currentTimeMillis();
+		long duration = current_time - start_time;
+		duration /= 1000;
+		if (duration == 0)
+			duration = 1;
+		mCounterDatapoints.setText(Long.toString(mService.get_no_points()));
+		mCounterDuration.setText(String.format("%d:%02d:%02d", duration / 3600,
+				(duration % 3600) / 60, (duration % 60)));
+		mCounterFileSize.setText(humanReadableByteCount(no_points * 20, false));
+
+		String sRate = (no_points * 10 / duration) / 10.0 + " points/s , ";
+		sRate += humanReadableByteCount(((pno_points*20) / duration), false) + "/s";
+		mCounterRate.setText(sRate);
+		mCounterStartTime.setText(DateFormat.format("MMMM dd, yyyy h:mmaa",
+				start_time));
 	}
 
 	public void is_stopped() {
-		Log.d("accel_activity","Updating UI stopped status");
+		// Log.d("accel_activity","Updating UI stopped status");
 		screen1.setVisibility(View.VISIBLE);
 		screen2.setVisibility(View.GONE);
 	}
