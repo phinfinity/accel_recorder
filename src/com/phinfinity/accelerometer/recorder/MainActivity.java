@@ -180,7 +180,7 @@ public class MainActivity extends Activity {
 		mCounterFileSize.setText(humanReadableByteCount(no_points * 20, false));
 
 		String sRate = (no_points * 10 / duration) / 10.0 + " points/s , ";
-		sRate += humanReadableByteCount(((pno_points*20) / duration), false) + "/s";
+		sRate += humanReadableByteCount(((no_points*20) / duration), false) + "/s";
 		mCounterRate.setText(sRate);
 		mCounterStartTime.setText(DateFormat.format("MMMM dd, yyyy h:mmaa",
 				start_time));
