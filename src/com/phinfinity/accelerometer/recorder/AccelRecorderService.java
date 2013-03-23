@@ -18,6 +18,7 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -33,9 +34,11 @@ public class AccelRecorderService extends IntentService implements SensorEventLi
 	FileOutputStream mOutputFileStream;
 	BufferedOutputStream mOutputBufferedStream;
 	DataOutputStream mOutputDataStream;
+	PowerManager.WakeLock wl;
 
 	public AccelRecorderService() {
 		super("Accelerator Recorder Service");
+
 	}
 
 	private final IBinder mBinder = new LocalBinder();
@@ -65,6 +68,8 @@ public class AccelRecorderService extends IntentService implements SensorEventLi
 		mSensor = mSmgr.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 		running = false;
 		Intent i;
+		PowerManager pm = (PowerManager) getApplicationContext().getSystemService(POWER_SERVICE);
+		wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "accel_recorder_wakelock");
 	}
 
 	@Override
@@ -75,6 +80,7 @@ public class AccelRecorderService extends IntentService implements SensorEventLi
 				file_name = data.getString("file_name");
 				rec_freq = data.getInt("rec_freq");
 				running = true;
+				wl.acquire();
 				start_time = System.currentTimeMillis();
 				no_datapoints = 0;
 				// start data collection;
@@ -123,6 +129,7 @@ public class AccelRecorderService extends IntentService implements SensorEventLi
 	public void stop_recording() {
 		if (running) {
 			running = false;
+			wl.release();
 			Log.d("accel_service", "Stopped recording...");
 			// stop recording;
 			mSmgr.unregisterListener(this);
