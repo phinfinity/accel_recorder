@@ -2,7 +2,10 @@ package com.phinfinity.accelerometer.recorder;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -11,6 +14,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
@@ -19,6 +23,7 @@ import android.os.IBinder;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -30,6 +35,7 @@ public class MainActivity extends Activity {
 	EditText mFileName;
 	TextView mCounterDatapoints, mCounterDuration, mCounterFileSize,
 			mCounterRate, mCounterStartTime;
+	Map<Integer, CheckBox> check_boxes;
 	Spinner mFreq;
 	boolean mBound = false;
 	AccelRecorderService mService;
@@ -54,6 +60,12 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 		screen1 = findViewById(R.id.screen1);
 		screen2 = findViewById(R.id.screen2);
+		check_boxes = new HashMap<Integer, CheckBox>();
+		check_boxes.put(Sensor.TYPE_ACCELEROMETER, (CheckBox) findViewById(R.id.checkBox_accelerometer));
+		check_boxes.put(Sensor.TYPE_GRAVITY, (CheckBox) findViewById(R.id.checkBox_gravity));
+		check_boxes.put(Sensor.TYPE_GYROSCOPE, (CheckBox) findViewById(R.id.checkBox_gyro));
+		check_boxes.put(Sensor.TYPE_LINEAR_ACCELERATION, (CheckBox) findViewById(R.id.checkBox_linacc));
+		check_boxes.put(Sensor.TYPE_ROTATION_VECTOR, (CheckBox) findViewById(R.id.checkBox_rotation));
 		mFileName = (EditText) findViewById(R.id.rec_name);
 		mFreq = (Spinner) findViewById(R.id.spinner_rec_freq);
 		mCounterDatapoints = (TextView) findViewById(R.id.counter_datapoints);
@@ -146,9 +158,19 @@ public class MainActivity extends Activity {
 		mFileName.setText("");
 		Log.d("accel_activity", "Selected File name : " + file_name);
 		Log.d("accel_activity", "Selected Item Id : " + freq);
+		ArrayList<Integer> sensor_list = new ArrayList<Integer>();
+		for(Map.Entry<Integer, CheckBox> entry : check_boxes.entrySet()) {
+			if(entry.getValue().isChecked())
+				sensor_list.add(entry.getKey());
+		}
+		int[] sensor_array = new int [sensor_list.size()];
+		for(int i = 0; i < sensor_array.length; i++)
+			sensor_array[i] = sensor_list.get(i);
+		
 		Intent intent = new Intent(this, AccelRecorderService.class);
 		intent.putExtra("file_name", file_name);
 		intent.putExtra("rec_freq", freq);
+		intent.putExtra("sensor_list", sensor_array);
 		startService(intent);
 		is_running();
 	}

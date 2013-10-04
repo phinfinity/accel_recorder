@@ -60,6 +60,37 @@
                     android:entries="@array/recording_frequencies" />
             </LinearLayout>
 
+            <CheckBox
+                android:id="@+id/checkBox_accelerometer"
+                android:checked="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Accelerometer" />
+            <CheckBox
+                android:id="@+id/checkBox_gyro"
+                android:checked="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gyroscope" />
+            <CheckBox
+                android:id="@+id/checkBox_gravity"
+                android:checked="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gravity" />
+            <CheckBox
+                android:id="@+id/checkBox_rotation"
+                android:checked="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rotation" />
+            <CheckBox
+                android:id="@+id/checkBox_linacc"
+                android:checked="false"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Linear Acceleration" />
+
             <Button
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
